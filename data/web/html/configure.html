@@ -1,0 +1,48 @@
+<html>
+<head>
+<link rel="stylesheet" href="/js/pure-min.css">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="/js/gizmo.js"></script>
+</head>
+<body onload="getConfig()">
+  <div class="pure-g">
+    <div class="pure-u-1">
+      <h2>Configure</h2>
+      Enter configuration information and click the submit button.
+    </div>
+    <div class="pure-u-1">
+      <form method="post" action="/api/bootstrap" class="pure-form-aligned">
+        <fieldset>
+          <div class="pure-control-group">
+            <label for="update-url">Update URL</label>
+            <input id="update-url" type="text" placeholder="http://server/path" name="update-url" required/>
+          </div>
+          <div class="pure-control-group">
+            <label for="ssid">WiFi SSID</label>
+            <input id="ssid" type="text" placeholder="ssid" name="ssid" required/>
+          </div>
+          <div class="pure-control-group">
+            <label for="password">WiFi Password</label>
+            <input id="password" type="password" placeholder="wifi password" name="password"/>
+          </div>
+          <div class="pure-control-group">
+            <label for="mqttUrl">MQTT URL</label>
+            <input id="mqtt-url" type="text" placeholder="mqtt://server:1883" name="mqtt-url" required/>
+          </div>
+          <div class="pure-control-group">
+            <label for="mqtt-user">MQTT Username</label>
+            <input id="mqtt-user" type="text" placeholder="mqttusername" name="mqtt-user"/>
+          </div>
+          <div class="pure-control-group">
+            <label for="mqtt-password">MQTT Password</label>
+            <input id="mqtt-password" type="password" placeholder="mqttpassword" name="mqtt-password"/>
+          </div>
+          <div class="pure-controls">
+            <button type="submit" class="pure-button pure-button-primary">Submit</button>
+          </div>
+        </fieldset>
+      </form>
+    </div>
+  </div>
+</body>
+</html>
