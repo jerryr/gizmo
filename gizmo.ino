@@ -1,26 +1,38 @@
-extern "C" {
-  #include "user_interface.h"
-}
+
 #include "gizmo.h"
 uint8 mode;
 #define STA 1
 #define AP 2
 void setup() {
-  struct station_config staconf;
-  if(!wifi_station_get_config_default(&staconf)) {
-    // No saved wifi, we need to start in AP mode
-    // And serve up a portal to configure the STA mode
-    start_portal();
+  Serial.begin(115200);
+  SPIFFS.begin();
+  //SPIFFS.remove(BOOTSTRAP_FILE_NAME);
+  if(SPIFFS.exists(BOOTSTRAP_FILE_NAME)) {
+    // Read file and extract config
+    File f = SPIFFS.open(BOOTSTRAP_FILE_NAME, "r");
+    if(!f) {
+      Serial.println(F("Open of config file failed. Falling back to unconfigured mode"));
+      // TODO: start AP etc
+    }
+    else {
+      int size = f.size();
+      char *config = (char *)malloc(size);
+      f.readBytes(config, size);
+      // TODO: parse config file etc.
+      free(config);
+      mode = STA;
+    }
+    f.close();
+    
+    Serial.println(F("Connecting to wifi"));
   }
   else {
-    // WiFi is configured, see if it connects
-    uint8 count = 0;
-    do {
-      delay(100);
-      count++;
-    }
-    while(wifi_station_get_connect_status() == STATION_CONNECTING && count > 10);
+    Serial.println(F("No bootstrap information"));
+    mode = AP;
+    start_ap();
+    start_portal();
   }
+  
 
 }
 
@@ -29,3 +41,19 @@ void loop() {
     handle_ap_clients();
   }
 }
+
+void start_ap() {
+  WiFi.disconnect();
+  WiFi.persistent(false);
+  Serial.println("Starting AP");
+  // Use gizmo-<chipid> as the AP name
+  //String ap_name = "gizmo-" + ESP.getFlashChipId();
+  char ap_name[32];
+  snprintf(ap_name, 32, "gizmo-%08X", ESP.getFlashChipId());
+  // Start AP
+  WiFi.softAP(ap_name);  
+  
+  Serial.printf("Access point name: %s\n", ap_name);
+
+}
+

@@ -1,48 +1,64 @@
-#include <ESP8266WiFi.h>
-#include <ESP8266WiFiAP.h>
 #include <ESP8266WebServer.h>
+#include <ESP8266WiFiAP.h>
+#include <ArduinoJson.h>
 
-extern "C" {
-  #include "user_interface.h"
-}
 
 ESP8266WebServer webserver;
-
 void start_portal() {
-  // Use gizmo-<chipid> as the AP name
-  String ap_name = "gizmo-" + ESP.getFlashChipId();
-  // Start AP
-  WiFi.softAP(ap_name.c_str());
+  Serial.println(F("Setting up webserver"));
   // Serve portal
   webserver.on("/", serve_root);
-  webserver.on("/configure", HTTP_POST, save_config);
+  webserver.on("/api/bootstrap", HTTP_POST, save_bootstrap);
+  webserver.on("/api/bootstrap", HTTP_GET, get_bootstrap);
+  webserver.serveStatic("/js", SPIFFS, "/web/js");
+  webserver.serveStatic("/html", SPIFFS, "/web/html");
+  webserver.begin();
   // Get selection and save the STA config
 }
 
 void serve_root() {
-  // Show list of access points through scan
-  // And allow user to select
-  String html=F("<html><body>"
-                "<form method=\"post\" action=\"/configure\">"
-                "<input type=text name=ssid/><br>"
-                "<input type=text name=password/><br>"
-                "<input type=submit>"
-                "</form>"
-                "</body></html>");
-  webserver.sendContent(html);
+  webserver.sendHeader("Location", "/html/configure.html");
+  webserver.send(302, "text/plain", "Redirected");
 }
-void save_config() {
+void save_bootstrap() {
+  // Save bootstrap
+  // TODO: sanitize and validate input
   String ssid = webserver.arg("ssid");
   String pwd = webserver.arg("password");
-  struct station_config staconfig;
-  os_memcpy(staconfig.ssid, ssid.c_str(), strlen(ssid.c_str()) + 1);
-  os_memcpy(staconfig.password, pwd.c_str(), strlen(pwd.c_str()+ 1));
-  wifi_set_opmode(0x01); // Set the default mode to STA
-  wifi_station_set_config(&staconfig); // Store the STA configuration
-  ESP.reset();
-  
+  String updateUrl = webserver.arg("update-url");
+  webserver.send(200, "text/plain", "Bootstrap complete!");
+  WiFi.disconnect();
+  WiFi.persistent(true);
+  WiFi.enableSTA(true);
+  WiFi.enableAP(false);
+  WiFi.setAutoReconnect(true);
+  WiFi.begin(ssid.c_str(), pwd.c_str());
+  WiFi.waitForConnectResult();
+  // TODO: validate that the connect succeeded before writing to bootstrap file
+  StaticJsonBuffer <200> jsonBuffer;
+  JsonObject& root = jsonBuffer.createObject();
+  root["ssid"] = ssid;
+  root["password"] = pwd;
+  root["updateUrl"] = updateUrl;
+  File f = SPIFFS.open(BOOTSTRAP_FILE_NAME, "w");
+  root.printTo(f);
+  f.close();
+  Serial.println(F("Saved bootstrap, rebooting..."));
+  ESP.restart();
 }
 void handle_ap_clients() {
+  //Serial.println("handleClients");
   webserver.handleClient();
 }
+void get_bootstrap() {
+  if(SPIFFS.exists(BOOTSTRAP_FILE_NAME)) {
+    File f = SPIFFS.open(BOOTSTRAP_FILE_NAME, "r");
+    webserver.streamFile(f, "application/json");
+    f.close();
+  }
+  else {
+    webserver.send(404, "text/plain", "Bootstrap file not found");
+  }
+}
+
 
