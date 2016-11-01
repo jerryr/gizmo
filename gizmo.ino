@@ -12,7 +12,9 @@ void setup() {
     File f = SPIFFS.open(BOOTSTRAP_FILE_NAME, "r");
     if(!f) {
       Serial.println(F("Open of config file failed. Falling back to unconfigured mode"));
-      // TODO: start AP etc
+      mode = AP;
+      start_ap();
+      start_portal();
     }
     else {
       int size = f.size();
@@ -47,7 +49,6 @@ void start_ap() {
   WiFi.persistent(false);
   Serial.println("Starting AP");
   // Use gizmo-<chipid> as the AP name
-  //String ap_name = "gizmo-" + ESP.getFlashChipId();
   char ap_name[32];
   snprintf(ap_name, 32, "gizmo-%08X", ESP.getFlashChipId());
   // Start AP
