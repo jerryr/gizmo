@@ -1,4 +1,3 @@
-
 #include "gizmo.h"
 uint8 mode;
 #define STA 1
@@ -20,13 +19,21 @@ void setup() {
       int size = f.size();
       char *config = (char *)malloc(size);
       f.readBytes(config, size);
-      // TODO: parse config file etc.
+      StaticJsonBuffer<200> jsonBuffer;
+      JsonObject& root = jsonBuffer.parseObject(config);
+      const char *updateUrl = root["updateUrl"];
       free(config);
       mode = STA;
+      check_for_ota_update(updateUrl);
     }
     f.close();
     
-    Serial.println(F("Connecting to wifi"));
+    Serial.println(F("\n\nConnecting to wifi\n"));
+    if(!WiFi.waitForConnectResult() == WL_CONNECTED) {
+      Serial.println("Could not connect to WiFi.. rebooting");
+      ESP.restart();
+    }
+
   }
   else {
     Serial.println(F("No bootstrap information"));
@@ -56,5 +63,23 @@ void start_ap() {
   
   Serial.printf("Access point name: %s\n", ap_name);
 
+}
+
+void check_for_ota_update(const char *update_url) {
+      // Try for an OTA update
+    Serial.println("Checking for updates...\n");
+    ESPhttpUpdate.rebootOnUpdate(true);
+    t_httpUpdate_return ret = ESPhttpUpdate.update(update_url, GIZMO_VERSION);
+    switch(ret) {
+       case HTTP_UPDATE_FAILED:
+        Serial.println("[update] Update failed.");
+        break;
+       case HTTP_UPDATE_NO_UPDATES:
+        Serial.println("[update] Update no Update.");
+        break;
+      default:
+        Serial.printf("[update] unknown return code: %d\n", ret);
+        break;
+    }
 }
 
