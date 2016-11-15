@@ -1,0 +1,15 @@
+image: ubuntu
+
+before_script:
+  - apt-get update && apt-get install make python
+  - mkdir /opt/gizmo-build
+  - cd /opt/gizmo-build; git clone --depth 1 https://github.com/plerup/makeEspArduino
+  - cd /opt/gizmo-build; git clone --depth 1 --branch 2.3.0 https://github.com/esp8266/Arduino esp8266
+  - cd /opt/gizmo-build/esp8266/tools; python get.py
+  - cd /opt/gizmo-build; mkdir libs; cd libs; git clone --depth 1 --branch v5.7.1 https://github.com/bblanchon/ArduinoJson
+  - rm -fr /opt/gizmo-build/libs/ArduinoJson/test
+  
+build:
+  stage: build
+  script:
+    - make -f /opt/gizmo-build/makeEspArduino/makeEspArduino.mk LIBS="/opt/gizmo-build/esp8266/libraries /opt/gizmo-build/libs" ESP_ROOT=/opt/gizmo-build/esp8266
