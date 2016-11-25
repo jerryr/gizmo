@@ -1,4 +1,5 @@
 #include "gizmo.h"
+#include "portal.h"
 uint8 mode;
 #define STA 1
 #define AP 2
@@ -33,7 +34,6 @@ void setup() {
       Serial.println("Could not connect to WiFi.. rebooting");
       ESP.restart();
     }
-
   }
   else {
     Serial.println(F("No bootstrap information"));
@@ -41,7 +41,7 @@ void setup() {
     start_ap();
     start_portal();
   }
-  
+
 
 }
 
@@ -59,8 +59,8 @@ void start_ap() {
   char ap_name[32];
   snprintf(ap_name, 32, "gizmo-%08X", ESP.getFlashChipId());
   // Start AP
-  WiFi.softAP(ap_name);  
-  
+  WiFi.softAP(ap_name);
+
   Serial.printf("Access point name: %s\n", ap_name);
 
 }

@@ -1,7 +1,8 @@
 #include <ESP8266WebServer.h>
 #include <ESP8266WiFiAP.h>
 #include <ArduinoJson.h>
-
+#include "portal.h"
+#include "gizmo.h"
 
 ESP8266WebServer webserver;
 void start_portal() {
@@ -60,5 +61,3 @@ void get_bootstrap() {
     webserver.send(404, "text/plain", "Bootstrap file not found");
   }
 }
-
-
