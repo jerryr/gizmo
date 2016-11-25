@@ -24,27 +24,56 @@ void serve_root() {
 void save_bootstrap() {
   // Save bootstrap
   // TODO: sanitize and validate input
-  String ssid = webserver.arg("ssid");
-  String pwd = webserver.arg("password");
-  String updateUrl = webserver.arg("update-url");
+  String myname = webserver.arg(S_MY_NAME);
+  Serial.println("myname = " + myname);
+  String updateUrl = webserver.arg(S_UPDATE_URL);
+  String ssid = webserver.arg(S_SSID);
+  String pwd = webserver.arg(S_PASSWD);
+  String mqttserver = webserver.arg(S_MQTT_SERVER);
+  String p = webserver.arg(S_MQTT_PORT);
+  uint16_t mqttport = atoi(p.c_str());
+  Serial.printf("p = %s, port = %d\n", p.c_str(), mqttport);
+  String mqttuser = webserver.arg(S_MQTT_USER);
+  String mqttpasswd = webserver.arg(S_MQTT_PASSWD);
   webserver.send(200, "text/plain", "Bootstrap complete!");
+  webserver.stop();
   WiFi.disconnect();
+  WiFi.softAPdisconnect();
   WiFi.persistent(true);
   WiFi.enableSTA(true);
   WiFi.enableAP(false);
+  WiFi.softAPdisconnect();
+  WiFi.mode(WIFI_STA);
+  WiFi.setAutoConnect(true);
+  WiFi.hostname(myname);
   WiFi.setAutoReconnect(true);
   WiFi.begin(ssid.c_str(), pwd.c_str());
-  WiFi.waitForConnectResult();
-  // TODO: validate that the connect succeeded before writing to bootstrap file
-  StaticJsonBuffer <200> jsonBuffer;
+  if(WiFi.waitForConnectResult() != WL_CONNECTED) {
+    Serial.println("Failed to connect to wifi; try again");
+    // TODO: serve an error page on http
+    return;
+  }
+  Serial.println(WiFi.localIP());
+  StaticJsonBuffer <400> jsonBuffer;
   JsonObject& root = jsonBuffer.createObject();
-  root["ssid"] = ssid;
-  root["password"] = pwd;
-  root["updateUrl"] = updateUrl;
+  root[S_SSID] = ssid;
+  root[S_PASSWD] = pwd;
+  root[S_UPDATE_URL] = updateUrl;
+  root[S_MQTT_USER] = mqttuser;
+  root[S_MQTT_PASSWD] = mqttpasswd;
+  root[S_MQTT_SERVER] = mqttserver;
+  root[S_MQTT_PORT] = mqttport;
+  root[S_MY_NAME] = myname;
+  root["end"] = "end";
   File f = SPIFFS.open(BOOTSTRAP_FILE_NAME, "w");
   root.printTo(f);
+  root.printTo(Serial);
+  delay(100);
   f.close();
+  delay(100);
+  SPIFFS.end();
   Serial.println(F("Saved bootstrap, rebooting..."));
+  delay(100);
   ESP.restart();
 }
 void handle_ap_clients() {

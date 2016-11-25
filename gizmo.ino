@@ -1,8 +1,12 @@
 #include "gizmo.h"
 #include "portal.h"
+#include "mqtt.h"
 uint8 mode;
 #define STA 1
 #define AP 2
+volatile bool update_requested = false;
+volatile bool reset_requested = false;
+char updateUrl[100];
 void setup() {
   Serial.begin(115200);
   SPIFFS.begin();
@@ -20,20 +24,32 @@ void setup() {
       int size = f.size();
       char *config = (char *)malloc(size);
       f.readBytes(config, size);
-      StaticJsonBuffer<200> jsonBuffer;
+      Serial.println(config);
+      StaticJsonBuffer<400> jsonBuffer;
       JsonObject& root = jsonBuffer.parseObject(config);
-      const char *updateUrl = root["updateUrl"];
+      const char *updateChar = root[S_UPDATE_URL];
+      strncpy(updateUrl, updateChar, 100);
+      String mqttuser = root[S_MQTT_USER];
+      String mqttpasswd = root[S_MQTT_PASSWD];
+      String mqttserver = root[S_MQTT_SERVER];
+      uint16_t mqttport = root[S_MQTT_PORT];
+      String myname = root[S_MY_NAME];
+      String ssid = root[S_SSID];
+      String password = root[S_PASSWD];
+      Serial.println(F("\n\nConnecting to wifi\n"));
+      if(!WiFi.waitForConnectResult() == WL_CONNECTED) {
+        Serial.println("Could not connect to WiFi.. rebooting");
+        SPIFFS.remove(BOOTSTRAP_FILE_NAME);
+        SPIFFS.end();
+        ESP.restart();
+      }
+      Serial.println("Local IP is:" + WiFi.localIP());
+      mqtt_connect(mqttuser, mqttpasswd, mqttserver, mqttport, myname);
       free(config);
       mode = STA;
-      check_for_ota_update(updateUrl);
     }
     f.close();
     
-    Serial.println(F("\n\nConnecting to wifi\n"));
-    if(!WiFi.waitForConnectResult() == WL_CONNECTED) {
-      Serial.println("Could not connect to WiFi.. rebooting");
-      ESP.restart();
-    }
   }
   else {
     Serial.println(F("No bootstrap information"));
@@ -48,6 +64,17 @@ void setup() {
 void loop() {
   if(mode == AP) {
     handle_ap_clients();
+  }
+  else {
+    mqtt_loop();
+  }
+  if(update_requested) {
+    Serial.println("Checking for OTA update...");
+    check_for_ota_update(updateUrl);
+    update_requested = false;
+  }
+  if(reset_requested) {
+    reset_config();
   }
 }
 
@@ -81,5 +108,11 @@ void check_for_ota_update(const char *update_url) {
         Serial.printf("[update] unknown return code: %d\n", ret);
         break;
     }
+}
+
+void reset_config() {
+  SPIFFS.remove(BOOTSTRAP_FILE_NAME);
+  Serial.println("Removed bootstrap information");
+  ESP.restart();
 }
 

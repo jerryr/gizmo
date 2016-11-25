@@ -14,28 +14,36 @@
       <form method="post" action="/api/bootstrap" class="pure-form-aligned">
         <fieldset>
           <div class="pure-control-group">
-            <label for="update-url">Update URL</label>
-            <input id="update-url" type="text" placeholder="http://server/path" name="update-url" required/>
+            <label for="myName">My Name</label>
+            <input id="myName" type="text" placeholder="gizmo1" name="myName" required/>
+          </div>
+          <div class="pure-control-group">
+            <label for="updateUrl">Update URL</label>
+            <input id="updateUrl" type="text" placeholder="http://server/path" name="updateUrl" required/>
           </div>
           <div class="pure-control-group">
             <label for="ssid">WiFi SSID</label>
             <input id="ssid" type="text" placeholder="ssid" name="ssid" required/>
           </div>
           <div class="pure-control-group">
-            <label for="password">WiFi Password</label>
-            <input id="password" type="password" placeholder="wifi password" name="password"/>
+            <label for="passwd">WiFi Password</label>
+            <input id="passwd" type="password" placeholder="wifi password" name="passwd"/>
           </div>
           <div class="pure-control-group">
-            <label for="mqttUrl">MQTT URL</label>
-            <input id="mqtt-url" type="text" placeholder="mqtt://server:1883" name="mqtt-url" required/>
+            <label for="mqttServer">MQTT Server Hostname</label>
+            <input id="mqttServer" type="text" placeholder="gizmo-mqtt.com" name="mqttServer" required/>
           </div>
           <div class="pure-control-group">
-            <label for="mqtt-user">MQTT Username</label>
-            <input id="mqtt-user" type="text" placeholder="mqttusername" name="mqtt-user"/>
+            <label for="mqttPort">MQTT Server Port</label>
+            <input id="mqttPort" type="text" placeholder="1883" name="mqttPort" required/>
           </div>
           <div class="pure-control-group">
-            <label for="mqtt-password">MQTT Password</label>
-            <input id="mqtt-password" type="password" placeholder="mqttpassword" name="mqtt-password"/>
+            <label for="mqttUser">MQTT Username</label>
+            <input id="mqttUser" type="text" placeholder="mqttusername" name="mqttUser"/>
+          </div>
+          <div class="pure-control-group">
+            <label for="mqttPasswd">MQTT Password</label>
+            <input id="mqttPasswd" type="password" placeholder="mqttpassword" name="mqttPasswd"/>
           </div>
           <div class="pure-controls">
             <button type="submit" class="pure-button pure-button-primary">Submit</button>
