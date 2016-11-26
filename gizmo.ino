@@ -1,6 +1,7 @@
 #include "gizmo.h"
 #include "portal.h"
 #include "mqtt.h"
+#include "connections.h"
 uint8 mode;
 #define STA 1
 #define AP 2
@@ -24,7 +25,6 @@ void setup() {
       int size = f.size();
       char *config = (char *)malloc(size);
       f.readBytes(config, size);
-      Serial.println(config);
       StaticJsonBuffer<400> jsonBuffer;
       JsonObject& root = jsonBuffer.parseObject(config);
       const char *updateChar = root[S_UPDATE_URL];
@@ -36,7 +36,7 @@ void setup() {
       String myname = root[S_MY_NAME];
       String ssid = root[S_SSID];
       String password = root[S_PASSWD];
-      Serial.println(F("\n\nConnecting to wifi\n"));
+      Serial.println(F("\Connecting to wifi"));
       if(!WiFi.waitForConnectResult() == WL_CONNECTED) {
         Serial.println("Could not connect to WiFi.. rebooting");
         SPIFFS.remove(BOOTSTRAP_FILE_NAME);
@@ -49,7 +49,17 @@ void setup() {
       mode = STA;
     }
     f.close();
-    
+    // Load the connections
+    if(SPIFFS.exists(CONNECTIONS_FILE_NAME)) {
+      f = SPIFFS.open(CONNECTIONS_FILE_NAME, "r");
+      int size = f.size();
+      char *config = (char *) malloc(size);
+      f.readBytes(config, size);
+      f.close();
+      const String &contents = String(config);
+      read_connections(contents);
+      free(config);
+    }  
   }
   else {
     Serial.println(F("No bootstrap information"));
@@ -67,14 +77,18 @@ void loop() {
   }
   else {
     mqtt_loop();
-  }
-  if(update_requested) {
-    Serial.println("Checking for OTA update...");
-    check_for_ota_update(updateUrl);
-    update_requested = false;
-  }
-  if(reset_requested) {
-    reset_config();
+    if(update_requested) {
+      Serial.println("Checking for OTA update...");
+      check_for_ota_update(updateUrl);
+      update_requested = false;
+      return;
+    }
+    if(reset_requested) {
+      reset_config();
+      reset_requested = false;
+      return;
+    }
+    process_connections();
   }
 }
 
