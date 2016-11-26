@@ -90,6 +90,7 @@ void loop() {
     }
     process_connections();
   }
+  delay(50);
 }
 
 void start_ap() {
