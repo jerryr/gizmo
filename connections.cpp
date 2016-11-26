@@ -34,7 +34,7 @@ void setup_connection(JsonObject& conn) {
   if(type == "motion") {
     Serial.println("Found a motion detector!!!");
     uint8_t gpio = conn["gpio"];
-    pinMode(gpio, INPUT_PULLUP);
+    pinMode(gpio, INPUT);
     String topic = conn["status_topic"];
     if(connections[gpio]) {      
       free(connections[gpio]);
