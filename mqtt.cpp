@@ -40,14 +40,18 @@ void mqtt_callback(char *topic, byte *message, unsigned int length) {
 
 String _user;
 String _password;
+String _server;
+uint16_t _port;
 
 bool _connect() {
+  mqttClient.setServer(_server.c_str(), _port);
+  mqttClient.setCallback(mqtt_callback);
   return mqttClient.connect(myname.c_str(), _user.c_str(), _password.c_str());
 }
 void mqtt_connect(String user, String password, String server, uint16_t port, String clientid) {
   Serial.println(F("Connecting to MQTT server"));
-  mqttClient.setServer(server.c_str(), port);
-  mqttClient.setCallback(mqtt_callback);
+  _server = server;
+  _port = port;
   _user = user;
   _password = password;
   if(_connect()) {
@@ -70,7 +74,13 @@ void mqtt_publish(String topic, String payload) {
 
 void mqtt_loop() {
   if(!mqttClient.connected()) {
-     _connect();
+    Serial.println(F("MQTT connection lost! Reconnecting..."));
+    if(_connect()) {
+      Serial.println(F("Connected to mqtt"));
+    }
+    else {
+      Serial.println(F("Failed to connect to mqtt broker"));
+    }
   }
   mqttClient.loop();
   long cur = millis();
