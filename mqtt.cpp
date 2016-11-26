@@ -11,13 +11,11 @@ long last_heartbeat = 0;
 String myname;
 void mqtt_callback(char *topic, byte *message, unsigned int length) {
   //Serial.printf("Got a message: %s\n", message);
-  Serial.printf("Got a message on topic %s\n", topic);
   if(control_topic == topic) {
       StaticJsonBuffer<400> jsonBuffer;
       char *buf = (char *)malloc((length + 1) * sizeof(char));
       os_memcpy(buf, message, length);
       buf[length] = '\0';
-      Serial.printf("buffer is %s\n", buf);
       JsonObject& root = jsonBuffer.parseObject(buf);
       String cmd = root["command"];
       Serial.println("cmd = " + cmd);
