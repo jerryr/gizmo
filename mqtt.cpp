@@ -46,7 +46,13 @@ uint16_t _port;
 bool _connect() {
   mqttClient.setServer(_server.c_str(), _port);
   mqttClient.setCallback(mqtt_callback);
-  return mqttClient.connect(myname.c_str(), _user.c_str(), _password.c_str());
+  if(mqttClient.connect(myname.c_str(), _user.c_str(), _password.c_str())){
+    control_topic = "/" + myname + "/update";
+    Serial.printf("Subscribing to update topic %s \n", control_topic.c_str());
+    mqttClient.subscribe(control_topic.c_str());
+    return true;
+  }
+  return false;
 }
 void mqtt_connect(String user, String password, String server, uint16_t port, String clientid) {
   Serial.println(F("Connecting to MQTT server"));
@@ -54,18 +60,15 @@ void mqtt_connect(String user, String password, String server, uint16_t port, St
   _port = port;
   _user = user;
   _password = password;
+  myname = clientid;
   if(_connect()) {
     Serial.println(F("Connected to mqtt"));
   }
   else {
     Serial.println(F("Failed to connect to mqtt broker"));
   }
-  control_topic = "/" + clientid + "/update";
-  Serial.printf("Subscribing to update topic %s \n", control_topic.c_str());
-  mqttClient.subscribe(control_topic.c_str());
-
   last_heartbeat = millis();
-  myname = clientid;
+
 }
 
 void mqtt_publish(String topic, String payload) {
