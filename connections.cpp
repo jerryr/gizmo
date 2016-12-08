@@ -54,7 +54,7 @@ void process_connections() {
       struct connection *c = connections[i];
       byte curstate = digitalRead(i);
       if(curstate != c->state) {
-        mqtt_publish(c->status_topic, curstate? "ON": "OFF");
+        mqtt_publish(c->status_topic, curstate? "OPEN": "CLOSED");
         c->state = curstate;
       }
     }
