@@ -2,11 +2,13 @@
 #include "portal.h"
 #include "mqtt.h"
 #include "connections.h"
+#include "serial_lights.h"
 uint8 mode;
 #define STA 1
 #define AP 2
 volatile bool update_requested = false;
 volatile bool reset_requested = false;
+unsigned long start_time = 0L;
 char updateUrl[100];
 void setup() {
   Serial.begin(115200);
@@ -67,7 +69,7 @@ void setup() {
     start_ap();
     start_portal();
   }
-
+  start_time = millis();
 
 }
 

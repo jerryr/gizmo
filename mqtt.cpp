@@ -9,13 +9,14 @@ extern bool update_requested;
 extern bool reset_requested;
 long last_heartbeat = 0;
 String myname;
+struct mqtt_callback *callbacks[MAX_CALLBACKS];
+
 void mqtt_callback(char *topic, byte *message, unsigned int length) {
-  //Serial.printf("Got a message: %s\n", message);
+  char *buf = (char *)malloc((length + 1) * sizeof(char));
+  os_memcpy(buf, message, length);
+  buf[length] = '\0';
   if(control_topic == topic) {
       StaticJsonBuffer<400> jsonBuffer;
-      char *buf = (char *)malloc((length + 1) * sizeof(char));
-      os_memcpy(buf, message, length);
-      buf[length] = '\0';
       JsonObject& root = jsonBuffer.parseObject(buf);
       String cmd = root["command"];
       Serial.println("cmd = " + cmd);
@@ -32,10 +33,18 @@ void mqtt_callback(char *topic, byte *message, unsigned int length) {
       else {
         Serial.println("Unknown command received");
       }
-      free(buf);
   } else {
-    Serial.printf("Received message on unknown topic %s\n", topic);
+    int i;
+    Serial.printf("Looking for a callback for topic %s...\n", topic);
+    for(i=0; i<MAX_CALLBACKS; i++) {
+      if(callbacks[i] != NULL &&
+          !strcasecmp(topic, callbacks[i]->topic.c_str())) {
+          callbacks[i]->cb(buf, callbacks[i]->cbarg);
+      }
+    }
   }
+  free(buf);
+  
 }
 
 String _user;
@@ -93,4 +102,24 @@ void mqtt_loop() {
     mqttClient.publish(heartbeat_topic.c_str(), myname.c_str());
   }
 }
+
+
+void mqtt_set_message_callback(struct mqtt_callback *cb) {
+  int i = 0;
+  for(i=0; i<MAX_CALLBACKS; i++) {
+    if(callbacks[i] == NULL) {
+      callbacks[i] = cb;
+      cb->pos = i;
+      mqttClient.subscribe(cb->topic.c_str());
+      return;
+    }
+  }
+  Serial.println("Max subscriptions exceeded");
+}
+
+void mqtt_unset_message_callback(struct mqtt_callback *cb) {
+  callbacks[cb->pos] = NULL;
+  mqttClient.unsubscribe(cb->topic.c_str());
+}
+
 

@@ -8,6 +8,11 @@ void process_connections();
 void read_connections(const String &str);
 struct connection {
   String status_topic;
+  String control_topic;
   byte state;
+  byte type;
+};
+enum connection_types {
+  MOTION, SWITCH, SERIAL_LIGHTS
 };
 #endif
