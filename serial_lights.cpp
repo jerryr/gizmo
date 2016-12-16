@@ -68,6 +68,36 @@ void MoveAnimUpdate(const AnimationParam& param)
     }
 }
 
+
+// More Christmassy animation
+RgbColor red = RgbColor(0x7f,0,0);
+RgbColor green = RgbColor(0,0x7f,0);
+RgbColor white = RgbColor(0x7f,0x7f,0x7f);
+uint16_t lastpos;
+void XMasAnimUpdate(const AnimationParam& param) {
+  float progress = moveEase(param.progress);
+  uint16_t start = progress * PixelCount;
+  if(start < 5) {
+    strip->ClearTo(green, lastpos, start);
+  }
+  else {
+    uint16_t end = lastpos<(start-9)? lastpos: start-9;
+    uint16_t delta = (start-end)/3;
+    strip->ClearTo(red, end, end + delta);
+    strip->ClearTo(white, end + delta + 1, end + (2*delta));
+    strip->ClearTo(green, end + (2*delta) + 1, end + (3*delta));
+    lastpos = end + (2*delta) + 1;
+  }
+//  strip->ClearTo(red, start, start+3);
+//  strip->ClearTo(white, start+3, start+6);
+//  strip->ClearTo(green, start+6, start+9);
+//  strip->ClearTo(red, lastpos, start);
+  if(param.state == AnimationState_Completed) {
+    animations.RestartAnimation(param.index);
+    lastpos = 0;
+  }
+}
+
 void SetupAnimations()
 {
     // fade all pixels providing a tail that is longer the faster
@@ -75,10 +105,15 @@ void SetupAnimations()
     animations.StartAnimation(0, 5, FadeAnimUpdate);
 
     // take several seconds to move eye fron one side to the other
-    animations.StartAnimation(1, 2000, MoveAnimUpdate);
+    //animations.StartAnimation(1, 2000, MoveAnimUpdate);
+    animations.StartAnimation(1, 2000, XMasAnimUpdate);
 }
 
+
 void init_serial_lights(int count) {
+  if(strip) {
+    deinit_serial_lights();
+  }
   PixelCount = count;
   strip = new NeoPixelBus<NeoGrbFeature, Neo800KbpsMethod>(count);
   strip->Begin();
@@ -87,11 +122,13 @@ void init_serial_lights(int count) {
 }
 
 void deinit_serial_lights() {
-  strip->ClearTo(RgbColor(0,0,0));
-  strip->Show();
-  delay(100);
-  delete strip;
-  strip = NULL;
+  if(strip) {
+    strip->ClearTo(RgbColor(0,0,0));
+    strip->Show();
+    delay(100);
+    delete strip;
+    strip = NULL;
+  }
 }
 
 void animate_serial_lights() {
