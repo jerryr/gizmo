@@ -6,6 +6,7 @@
 struct connection *connections[20];
 extern unsigned long start_time;
 struct mqtt_callback *serial = NULL;
+void control_switch(String message, void *cbarg);
 
 void update_connections(String& url) {
   HTTPClient hclient;
@@ -38,12 +39,16 @@ void setup_connection(JsonObject& conn) {
     uint8_t gpio = conn["gpio"];
     pinMode(gpio, INPUT);
     String topic = conn["status_topic"];
-    if(connections[gpio]) {      
+    if(connections[gpio]) {
+      if(connections[gpio]->cb) {
+        delete connections[gpio]->cb;    
+      }
       delete connections[gpio];
     }
     connections[gpio] = new connection();
     connections[gpio]->status_topic = topic;
     connections[gpio]->type = MOTION;
+    connections[gpio]->cb = NULL; // No topics to subscribe for motion detectors
   }
   else if(type == "serial") {
     // No GPIO for serial lights, since they always connect to RX
@@ -57,6 +62,26 @@ void setup_connection(JsonObject& conn) {
     cb->cb = control_serial_lights;
     cb->cbarg = NULL;
     serial = cb;
+    mqtt_set_message_callback(cb);
+  }
+  else if(type == "switch") {
+    String control_topic = conn["control_topic"];
+    String status_topic = conn["status_topic"];
+    uint8_t gpio = conn["gpio"];
+    if(connections[gpio]) {
+      if(connections[gpio]->cb) {
+        delete connections[gpio]->cb;    
+      }
+      delete connections[gpio];      
+    }
+    connections[gpio] = new connection();
+    connections[gpio]->status_topic = status_topic;
+    connections[gpio]->gpio = gpio;
+    struct mqtt_callback *cb = new mqtt_callback();
+    cb->topic = control_topic;
+    cb->cb = control_switch;    
+    cb->cbarg = connections[gpio];    
+    connections[gpio]->cb = cb;
     mqtt_set_message_callback(cb);
   }
   else {
@@ -84,4 +109,18 @@ void process_connections() {
     animate_serial_lights();
   }
 }
+
+void control_switch(String message, void *cbarg) {
+  struct connection *conn = (struct connection *) cbarg;
+  if(message == "ON") {
+    digitalWrite(conn->gpio, HIGH);
+  }
+  else if (message == "OFF"){
+    digitalWrite(conn->gpio, LOW);
+  }
+  else {
+    Serial.printf("Unknown switch control message: %s\n", message.c_str());
+  }
+}
+
 

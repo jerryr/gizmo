@@ -8,9 +8,10 @@ void process_connections();
 void read_connections(const String &str);
 struct connection {
   String status_topic;
-  String control_topic;
   byte state;
   byte type;
+  struct mqtt_callback *cb;
+  uint8_t gpio;
 };
 enum connection_types {
   MOTION, SWITCH, SERIAL_LIGHTS
