@@ -59,6 +59,12 @@ bool _connect() {
     control_topic = "/" + myname + "/update";
     Serial.printf("Subscribing to update topic %s \n", control_topic.c_str());
     mqttClient.subscribe(control_topic.c_str());
+    // If this is a reconnect attempt, there may be connections already subscribed
+    for(int i=0; i<MAX_CALLBACKS; i++) {
+      if(callbacks[i] != NULL) {
+        mqttClient.subscribe(callbacks[i]->topic.c_str());
+      }
+    }
     return true;
   }
   return false;
