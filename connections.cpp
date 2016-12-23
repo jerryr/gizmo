@@ -77,6 +77,7 @@ void setup_connection(JsonObject& conn) {
     connections[gpio] = new connection();
     connections[gpio]->status_topic = status_topic;
     connections[gpio]->gpio = gpio;
+    pinMode(gpio, OUTPUT);
     struct mqtt_callback *cb = new mqtt_callback();
     cb->topic = control_topic;
     cb->cb = control_switch;    
